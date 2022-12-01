@@ -1,0 +1,99 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: java-hello-world
+spec:
+  selector:
+    app: java-hello-world
+  ports:
+  - port: 8080
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: java-hello-world
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java-hello-world
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: java-hello-world
+        version: v1
+      annotations:
+        revision: "d9c7ccb0713da882d8373169e2a1d705f5959386"
+    spec:
+      containers:
+      - name: java-hello-world
+        image: docker.example.com/app:3ab0168db5a36ca227c42c07914ee12646355a1f
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        readinessProbe:
+          exec:
+            command: ["sh", "-c", "curl -s http://localhost:8080/health | grep -q app"]
+          initialDelaySeconds: 15
+      imagePullSecrets:
+      - name: regsecret
+      restartPolicy: Always
+# ---
+# apiVersion: networking.istio.io/v1alpha3
+# kind: VirtualService
+# metadata:
+#   name: java-hello-world
+# spec:
+#   hosts:
+#   - java-hello-world
+#   http:
+#   - route:
+#     - destination:
+#         host: java-hello-world
+#         subset: v1
+# ---
+# apiVersion: networking.istio.io/v1alpha3
+# kind: DestinationRule
+# metadata:
+#   name: java-hello-world
+# spec:
+#   host: java-hello-world
+#   subsets:
+#   - name: v1
+#     labels:
+#       version: v1
+# ---
+# apiVersion: networking.istio.io/v1alpha3
+# kind: Gateway
+# metadata:
+#   name: app-gateway
+# spec:
+#   selector:
+#     istio: ingressgateway
+#   servers:
+#   - port:
+#       number: 80
+#       name: http
+#       protocol: HTTP
+#     hosts:
+#     - "java-hello-world.localhost.local"
+# ---
+# apiVersion: networking.istio.io/v1alpha3
+# kind: VirtualService
+# metadata:
+#   name: java-hello-world
+# spec:
+#   hosts:
+#   - "java-hello-world.localhost.local"
+#   gateways:
+#   - java-hello-world
+#   http:
+#   - route:
+#     - destination:
+#         host: java-hello-world
+#         subset: v1
+#         port:
+#           number: 8080
+# ---
